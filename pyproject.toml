@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "reachable"
+description = "Check if a URL is reachable"
+dynamic = ["version"]
+readme = "README.md"
+authors = [{ name = "Alex Mili" }]
+license = { file = "LICENSE" }
+requires-python = ">=3.8"
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Developers",
+]
+keywords = []
+dependencies = ["httpx[http2]", "tldextract", "fake-useragent", "tqdm"]
+
+[project.urls]
+Homepage = "https://github.com/AlexMili/Reachable"
+Issues = "https://github.com/AlexMili/Reachable/issues"
+Repository = "https://github.com/AlexMili/Reachable"
+Documentation = "https://github.com/AlexMili/Reachable"
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["./src/reachable/"]
+
+[tool.hatch.version]
+path = "src/reachable/VERSION.md"
+pattern = "(?P<version>.*)"
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2
+known-first-party = ["reachable"]
+
+[tool.mypy]
+strict = true
+exclude = [".venv", "test", "build", "dist"]
+ignore_missing_imports = true
+show_error_codes = true
