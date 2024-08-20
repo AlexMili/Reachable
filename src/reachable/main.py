@@ -1,13 +1,14 @@
+import asyncio
 import random
 import time
-from urllib.parse import urlparse, urlunparse
 from typing import List, Union
+from urllib.parse import urlparse, urlunparse
 
 import httpx
 import tldextract
 from tqdm import tqdm
 
-from reachable.client import Client
+from reachable.client import AsyncClient, Client
 
 
 def is_reachable(
@@ -16,6 +17,7 @@ def is_reachable(
     include_host: bool = True,
     sleep_between_requests: bool = True,
     head_optim: bool = True,
+    include_response: bool = False,
 ):
     return_as_list = True
     if isinstance(url, str) is True:
@@ -32,8 +34,7 @@ def is_reachable(
     for elt in iterator:
         resp = None
         to_return: dict = {
-            "url": elt,
-            "response": None,
+            "original_url": elt,
             "status_code": -1,
             "success": False,
             "error_name": None,
@@ -55,7 +56,7 @@ def is_reachable(
             )
 
             if to_return["redirect"]["final_url"] is not None:
-                to_return["url"] = to_return["redirect"]["final_url"]
+                to_return["final_url"] = to_return["redirect"]["final_url"]
 
         if resp is not None:
             # Success
@@ -67,9 +68,81 @@ def is_reachable(
             if b"cloudflareinsights.com" in resp.content:
                 to_return["cloudflare_protection"] = True
 
+        if include_response is True:
+            to_return["response"] = resp
+
         results.append(to_return)
 
     client.close()
+
+    if return_as_list is False:
+        return results[0]
+    else:
+        return results
+
+
+async def is_reachable_async(
+    url: Union[List[str], str],
+    headers: dict = None,
+    include_host: bool = True,
+    sleep_between_requests: bool = True,
+    head_optim: bool = True,
+    include_response: bool = False,
+):
+    return_as_list = True
+    if isinstance(url, str) is True:
+        url = [url]
+        return_as_list = False
+
+    async with AsyncClient(headers=headers, include_host=include_host) as client:
+        results = []
+        iterator = url
+        if return_as_list is True:
+            iterator = tqdm(url)
+
+        for elt in iterator:
+            resp = None
+            to_return: dict = {
+                "original_url": elt,
+                "status_code": -1,
+                "success": False,
+                "error_name": None,
+                "cloudflare_protection": False,
+            }
+
+            resp, to_return["error_name"] = await do_request_async(
+                client,
+                elt,
+                head_optim=head_optim,
+                sleep_between_requests=sleep_between_requests,
+            )
+
+            # Then we handle redirects
+            if resp is not None and 400 > resp.status_code >= 300:
+                to_return["error_name"] = None
+                (
+                    to_return["redirect"],
+                    resp,
+                    to_return["error_name"],
+                ) = await handle_redirect_async(client, resp)
+
+                if to_return["redirect"]["final_url"] is not None:
+                    to_return["final_url"] = to_return["redirect"]["final_url"]
+
+            if resp is not None:
+                # Success
+                if 300 > resp.status_code >= 200:
+                    to_return["success"] = True
+
+                to_return["status_code"] = resp.status_code
+
+                if b"cloudflareinsights.com" in resp.content:
+                    to_return["cloudflare_protection"] = True
+
+            if include_response is True:
+                to_return["response"] = resp
+
+            results.append(to_return)
 
     if return_as_list is False:
         return results[0]
@@ -123,6 +196,62 @@ def do_request(
     return resp, error_name
 
 
+async def do_request_async(
+    client, url: str, head_optim: bool = True, sleep_between_requests: bool = True
+):
+    error_name = None
+    resp = None
+
+    # We first use HEAD to optimize requests
+    try:
+        if sleep_between_requests is True:
+            await asyncio.sleep(random.SystemRandom().uniform(1, 2))
+        resp = await client.head(url)
+    except httpx.ConnectError:
+        error_name = "ConnexionError"
+    except httpx.ConnectTimeout:
+        error_name = "ConnectTimeout"
+    except httpx.ReadTimeout:
+        error_name = "ReadTimeout"
+    except httpx.RemoteProtocolError:
+        error_name = "RemoteProtocolError"
+    except httpx.HTTPStatusError as e:
+        # For whatever reason HTTPStatusError is raised for non 20X status code
+        # which is documented in HTTPX's documentation but this is not what happens
+        # when using sync mode so we standardize behavior here.
+        resp = e.response
+    except Exception as e:
+        error_name = type(e).__name__
+
+    # Sometimes, the 40X and 50X errors are generated because of the use of HEAD request
+    if head_optim is True and resp is not None and resp.status_code >= 400:
+        # Reset error & response
+        error_name = None
+        resp = None
+
+        try:
+            if sleep_between_requests is True:
+                await asyncio.sleep(random.SystemRandom().uniform(1, 2))
+            resp = await client.get(url)
+        except httpx.ConnectError:
+            error_name = "ConnexionError"
+        except httpx.ConnectTimeout:
+            error_name = "ConnectTimeout"
+        except httpx.ReadTimeout:
+            error_name = "ReadTimeout"
+        except httpx.RemoteProtocolError:
+            error_name = "RemoteProtocolError"
+        except httpx.HTTPStatusError as e:
+            # For whatever reason HTTPStatusError is raised for non 20X status code
+            # which is documented in HTTPX's documentation but this is not what happens
+            # when using sync mode so we standardize behavior here.
+            resp = e.response
+        except Exception as e:
+            error_name = type(e).__name__
+
+    return resp, error_name
+
+
 def is_tlds_matching(url1: str, url2: str, strict_suffix: bool = True) -> bool:
     is_matching: bool = False
     tld_orig = tldextract.extract(url1)
@@ -170,7 +299,33 @@ def handle_redirect(client, resp, sleep_between_requests: bool = True):
 
     new_url = _get_new_url(resp)
 
-    resp, error_name, chain = follow_redirect(client, new_url)
+    resp, error_name, chain = follow_redirect(
+        client, new_url, sleep_between_requests=sleep_between_requests
+    )
+
+    data["chain"] = chain
+    if resp is not None:
+        data["final_url"] = str(resp.url)
+        data["tld_match"] = is_tlds_matching(
+            str(resp.url), data["final_url"], strict_suffix=False
+        )
+
+    return data, resp, error_name
+
+
+async def handle_redirect_async(client, resp, sleep_between_requests: bool = True):
+    error_name = None
+    data = {
+        "chain": [],
+        "final_url": None,
+        "tld_match": False,
+    }
+
+    new_url = _get_new_url(resp)
+
+    resp, error_name, chain = await follow_redirect_async(
+        client, new_url, sleep_between_requests=sleep_between_requests
+    )
 
     data["chain"] = chain
     if resp is not None:
@@ -204,6 +359,40 @@ def follow_redirect(
     if resp is not None and 400 > resp.status_code >= 300:
         new_url = _get_new_url(str(resp.url), resp.headers.get("location", "unknown"))
         nresp, error_name, tchain = follow_redirect(
+            client,
+            new_url,
+            depth=depth - 1,
+            sleep_between_requests=sleep_between_requests,
+            head_optim=head_optim,
+        )
+        chain += tchain
+        return nresp, error_name, chain
+    else:
+        return resp, error_name, chain
+
+
+async def follow_redirect_async(
+    client,
+    url: str,
+    depth: int = 5,
+    sleep_between_requests: bool = True,
+    head_optim: bool = True,
+):
+    if depth <= 0:
+        return None, "Max depth reached", []
+
+    chain = [url]
+    resp, error_name = await do_request_async(
+        client,
+        url,
+        head_optim=head_optim,
+        sleep_between_requests=sleep_between_requests,
+    )
+
+    # Has redirect
+    if resp is not None and 400 > resp.status_code >= 300:
+        new_url = _get_new_url(str(resp.url), resp.headers.get("location", "unknown"))
+        nresp, error_name, tchain = await follow_redirect_async(
             client,
             new_url,
             depth=depth - 1,

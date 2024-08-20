@@ -28,6 +28,7 @@ pip install -e .
 
 ## Simple URL
 ```python
+from reachable import is_reachable
 result = is_reachable("https://google.com")
 ```
 
@@ -50,6 +51,7 @@ The output will look like this:
 
 ## Multiple URLs
 ```python
+from reachable import is_reachable
 result = is_reachable(["https://google.com", "http://bing.com"])
 ```
 
@@ -81,4 +83,12 @@ The output will look like this:
         "tld_match": true
     }
 ]
+```
+
+## Async
+```python
+import asyncio
+from reachable import is_reachable_async
+
+result = asyncio.run(is_reachable_async("https://google.com"))
 ```
