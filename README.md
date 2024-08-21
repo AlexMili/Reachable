@@ -92,3 +92,21 @@ from reachable import is_reachable_async
 
 result = asyncio.run(is_reachable_async("https://google.com"))
 ```
+or
+```python
+import asyncio
+from reachable import is_reachable_async
+
+urls = ["https://google.com", "https://bing.com"]
+
+try:
+    loop = asyncio.get_running_loop()
+except RuntimeError:
+    # No loop already exists so we crete one
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+try:
+    result = loop.run_until_complete(asyncio.gather(*[is_reachable_async(url) for url in urls]))
+finally:
+    loop.close()
+```
