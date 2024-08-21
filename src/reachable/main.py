@@ -215,11 +215,6 @@ async def do_request_async(
         error_name = "ReadTimeout"
     except httpx.RemoteProtocolError:
         error_name = "RemoteProtocolError"
-    except httpx.HTTPStatusError as e:
-        # For whatever reason HTTPStatusError is raised for non 20X status code
-        # which is documented in HTTPX's documentation but this is not what happens
-        # when using sync mode so we standardize behavior here.
-        resp = e.response
     except Exception as e:
         error_name = type(e).__name__
 

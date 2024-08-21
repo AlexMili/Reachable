@@ -10,8 +10,8 @@ ua = UserAgent(browsers=["chrome"], os="windows", platforms="pc", min_version=12
 
 class Client:
     def __init__(self, headers: Union[dict, None] = None, include_host: bool = False):
-        transport = httpx.HTTPTransport(retries=3)
-        timeout = httpx.Timeout(10.0, connect=60.0, read=10.0)
+        transport = httpx.HTTPTransport(retries=2)
+        timeout = 10
         if headers is None:
             headers = {
                 "User-Agent": ua.random,
@@ -35,49 +35,36 @@ class Client:
         self,
         method: str,
         url: str,
-        retries: int = 3,
         headers: Union[dict, None] = None,
         include_host: bool = False,
         content=None,
     ):
         include_host = include_host | self.include_host
-        data = None
-        tried: int = 0
+        resp = None
 
         if include_host is True and headers is None:
             headers = {"Host": tldextract.extract(url).fqdn}
         elif include_host is True and "Host" not in headers:
             headers["Host"] = tldextract.extract(url).fqdn
 
-        while data is None and tried < retries:
-            try:
-                data = self.client.request(
-                    method, url, headers=headers, content=content
-                )
-            except httpx.ReadTimeout:
-                tried += 1
+        resp = self.client.request(method, url, headers=headers, content=content)
 
-        return data
+        return resp
 
-    def get(
-        self, url, retries: int = 3, headers: dict = None, include_host: bool = False
-    ):
-        return self.request("get", url, retries, headers, include_host)
+    def get(self, url, headers: dict = None, include_host: bool = False):
+        return self.request("get", url, headers, include_host)
 
     def post(
         self,
         url,
-        retries: int = 3,
         headers: dict = None,
         content=None,
         include_host: bool = False,
     ):
-        return self.request("post", url, retries, headers, include_host, content)
+        return self.request("post", url, headers, include_host, content)
 
-    def head(
-        self, url, retries: int = 3, headers: dict = None, include_host: bool = False
-    ):
-        return self.request("head", url, retries, headers, include_host)
+    def head(self, url, headers: dict = None, include_host: bool = False):
+        return self.request("head", url, headers, include_host)
 
     def close(self):
         self.client.close()
@@ -85,8 +72,8 @@ class Client:
 
 class AsyncClient:
     def __init__(self, headers: Union[dict, None] = None, include_host: bool = False):
-        self.transport = httpx.AsyncHTTPTransport(retries=3)
-        self.timeout = httpx.Timeout(10.0, connect=60.0, read=10.0)
+        self.transport = httpx.AsyncHTTPTransport(retries=2)
+        self.timeout = 10
         if headers is None:
             self.headers = {
                 "User-Agent": ua.random,
@@ -127,50 +114,32 @@ class AsyncClient:
         self,
         method: str,
         url: str,
-        retries: int = 3,
         headers: Union[dict, None] = None,
         include_host: bool = False,
         content=None,
     ):
         include_host = include_host | self.include_host
 
-        data = None
-        tried: int = 0
-
         if include_host is True and headers is None:
             headers = {"Host": tldextract.extract(url).fqdn}
         elif include_host is True and "Host" not in headers:
             headers["Host"] = tldextract.extract(url).fqdn
 
-        while data is None and tried < retries:
-            try:
-                resp = await self.client.request(
-                    method, url, headers=headers, content=content
-                )
-                resp.raise_for_status()
-                data = resp
-            except httpx.ReadTimeout:
-                tried += 1
-                data = None
+        resp = await self.client.request(method, url, headers=headers, content=content)
 
-        return data
+        return resp
 
-    async def get(
-        self, url, retries: int = 3, headers: dict = None, include_host: bool = False
-    ):
-        return await self.request("get", url, retries, headers, include_host)
+    async def get(self, url, headers: dict = None, include_host: bool = False):
+        return await self.request("get", url, headers, include_host)
 
     async def post(
         self,
         url,
-        retries: int = 3,
         headers: dict = None,
         content=None,
         include_host: bool = False,
     ):
-        return await self.request("post", url, retries, headers, include_host, content)
+        return await self.request("post", url, headers, include_host, content)
 
-    async def head(
-        self, url, retries: int = 3, headers: dict = None, include_host: bool = False
-    ):
-        return await self.request("head", url, retries, headers, include_host)
+    async def head(self, url, headers: dict = None, include_host: bool = False):
+        return await self.request("head", url, headers, include_host)
