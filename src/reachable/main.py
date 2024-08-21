@@ -18,13 +18,18 @@ def is_reachable(
     sleep_between_requests: bool = True,
     head_optim: bool = True,
     include_response: bool = False,
+    client: Union[Client, None] = None,
 ):
     return_as_list = True
     if isinstance(url, str) is True:
         url = [url]
         return_as_list = False
 
-    client = Client(headers=headers, include_host=include_host)
+    close_client: bool = True
+    if client is None:
+        client = Client(headers=headers, include_host=include_host)
+    else:
+        close_client = False
 
     results = []
     iterator = url
@@ -73,7 +78,8 @@ def is_reachable(
 
         results.append(to_return)
 
-    client.close()
+    if close_client is True:
+        client.close()
 
     if return_as_list is False:
         return results[0]
@@ -88,61 +94,71 @@ async def is_reachable_async(
     sleep_between_requests: bool = True,
     head_optim: bool = True,
     include_response: bool = False,
+    client: Union[AsyncClient, None] = None,
 ):
     return_as_list = True
     if isinstance(url, str) is True:
         url = [url]
         return_as_list = False
 
-    async with AsyncClient(headers=headers, include_host=include_host) as client:
-        results = []
-        iterator = url
-        if return_as_list is True:
-            iterator = tqdm(url)
+    close_client: bool = True
+    if client is None:
+        client = AsyncClient(headers=headers, include_host=include_host)
+        await client.open()
+    else:
+        close_client = False
 
-        for elt in iterator:
-            resp = None
-            to_return: dict = {
-                "original_url": elt,
-                "status_code": -1,
-                "success": False,
-                "error_name": None,
-                "cloudflare_protection": False,
-            }
+    results = []
+    iterator = url
+    if return_as_list is True:
+        iterator = tqdm(url)
 
-            resp, to_return["error_name"] = await do_request_async(
-                client,
-                elt,
-                head_optim=head_optim,
-                sleep_between_requests=sleep_between_requests,
-            )
+    for elt in iterator:
+        resp = None
+        to_return: dict = {
+            "original_url": elt,
+            "status_code": -1,
+            "success": False,
+            "error_name": None,
+            "cloudflare_protection": False,
+        }
 
-            # Then we handle redirects
-            if resp is not None and 400 > resp.status_code >= 300:
-                to_return["error_name"] = None
-                (
-                    to_return["redirect"],
-                    resp,
-                    to_return["error_name"],
-                ) = await handle_redirect_async(client, resp)
+        resp, to_return["error_name"] = await do_request_async(
+            client,
+            elt,
+            head_optim=head_optim,
+            sleep_between_requests=sleep_between_requests,
+        )
 
-                if to_return["redirect"]["final_url"] is not None:
-                    to_return["final_url"] = to_return["redirect"]["final_url"]
+        # Then we handle redirects
+        if resp is not None and 400 > resp.status_code >= 300:
+            to_return["error_name"] = None
+            (
+                to_return["redirect"],
+                resp,
+                to_return["error_name"],
+            ) = await handle_redirect_async(client, resp)
 
-            if resp is not None:
-                # Success
-                if 300 > resp.status_code >= 200:
-                    to_return["success"] = True
+            if to_return["redirect"]["final_url"] is not None:
+                to_return["final_url"] = to_return["redirect"]["final_url"]
 
-                to_return["status_code"] = resp.status_code
+        if resp is not None:
+            # Success
+            if 300 > resp.status_code >= 200:
+                to_return["success"] = True
 
-                if b"cloudflareinsights.com" in resp.content:
-                    to_return["cloudflare_protection"] = True
+            to_return["status_code"] = resp.status_code
 
-            if include_response is True:
-                to_return["response"] = resp
+            if b"cloudflareinsights.com" in resp.content:
+                to_return["cloudflare_protection"] = True
 
-            results.append(to_return)
+        if include_response is True:
+            to_return["response"] = resp
+
+        results.append(to_return)
+
+    if close_client is True:
+        await client.close()
 
     if return_as_list is False:
         return results[0]
