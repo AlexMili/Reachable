@@ -357,7 +357,7 @@ def follow_redirect(
 
     # Has redirect
     if resp is not None and 400 > resp.status_code >= 300:
-        new_url = _get_new_url(str(resp.url), resp.headers.get("location", "unknown"))
+        new_url = _get_new_url(resp)
         nresp, error_name, tchain = follow_redirect(
             client,
             new_url,
@@ -391,7 +391,7 @@ async def follow_redirect_async(
 
     # Has redirect
     if resp is not None and 400 > resp.status_code >= 300:
-        new_url = _get_new_url(str(resp.url), resp.headers.get("location", "unknown"))
+        new_url = _get_new_url(resp)
         nresp, error_name, tchain = await follow_redirect_async(
             client,
             new_url,
