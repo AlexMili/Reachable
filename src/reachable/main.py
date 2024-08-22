@@ -1,7 +1,7 @@
 import asyncio
 import random
 import time
-from typing import List, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse, urlunparse
 
 import httpx
@@ -13,17 +13,23 @@ from reachable.client import AsyncClient, Client
 
 def is_reachable(
     url: Union[List[str], str],
-    headers: dict = None,
+    headers: Optional[Dict[str, str]] = None,
     include_host: bool = True,
     sleep_between_requests: bool = True,
     head_optim: bool = True,
     include_response: bool = False,
-    client: Union[Client, None] = None,
-):
-    return_as_list = True
-    if isinstance(url, str) is True:
-        url = [url]
+    client: Optional[Client] = None,
+) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+    return_as_list: bool = True
+    url_list: List[str] = []
+
+    if isinstance(url, str):
+        url_list = [url]
         return_as_list = False
+    elif isinstance(url, list):
+        url_list = url
+    else:
+        raise ValueError(f"URL(s) of type {type(url)} is not supported")
 
     close_client: bool = True
     if client is None:
@@ -32,16 +38,16 @@ def is_reachable(
         close_client = False
 
     # Only keep unique URLs to avoid requesting same URL multiple times
-    url = list(set(url))
+    url_list = list(set(url_list))
 
-    results = []
-    iterator = url
+    results: List[Dict[str, Any]] = []
+    iterator: Union[List[str], tqdm] = url
     if return_as_list is True:
         iterator = tqdm(url)
 
     for elt in iterator:
-        resp = None
-        to_return: dict = {
+        resp: Optional[httpx.Response] = None
+        to_return: Dict[str, Any] = {
             "original_url": elt,
             "status_code": -1,
             "success": False,
@@ -92,17 +98,23 @@ def is_reachable(
 
 async def is_reachable_async(
     url: Union[List[str], str],
-    headers: dict = None,
+    headers: Optional[Dict[str, str]] = None,
     include_host: bool = True,
     sleep_between_requests: bool = True,
     head_optim: bool = True,
     include_response: bool = False,
-    client: Union[AsyncClient, None] = None,
-):
-    return_as_list = True
-    if isinstance(url, str) is True:
-        url = [url]
+    client: Optional[AsyncClient] = None,
+) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+    return_as_list: bool = True
+    url_list: List[str] = []
+
+    if isinstance(url, str):
+        url_list = [url]
         return_as_list = False
+    elif isinstance(url, list):
+        url_list = url
+    else:
+        raise ValueError(f"URL(s) of type {type(url)} is not supported")
 
     close_client: bool = True
     if client is None:
@@ -112,16 +124,16 @@ async def is_reachable_async(
         close_client = False
 
     # Only keep unique URLs to avoid requesting same URL multiple times
-    url = list(set(url))
+    url_list = list(set(url_list))
 
-    results = []
-    iterator = url
+    results: List[Dict[str, Any]] = []
+    iterator: Union[List[str], tqdm] = url
     if return_as_list is True:
-        iterator = tqdm(url)
+        iterator = tqdm(url_list)
 
     for elt in iterator:
-        resp = None
-        to_return: dict = {
+        resp: Optional[httpx.Response] = None
+        to_return: Dict[str, Any] = {
             "original_url": elt,
             "status_code": -1,
             "success": False,
@@ -173,10 +185,13 @@ async def is_reachable_async(
 
 
 def do_request(
-    client, url: str, head_optim: bool = True, sleep_between_requests: bool = True
-):
-    error_name = None
-    resp = None
+    client: Client,
+    url: str,
+    head_optim: bool = True,
+    sleep_between_requests: bool = True,
+) -> Tuple[Optional[httpx.Response], Optional[str]]:
+    error_name: Optional[str] = None
+    resp: Optional[httpx.Response] = None
 
     # We first use HEAD to optimize requests
     try:
@@ -219,10 +234,13 @@ def do_request(
 
 
 async def do_request_async(
-    client, url: str, head_optim: bool = True, sleep_between_requests: bool = True
-):
-    error_name = None
-    resp = None
+    client: AsyncClient,
+    url: str,
+    head_optim: bool = True,
+    sleep_between_requests: bool = True,
+) -> Tuple[Optional[httpx.Response], Optional[str]]:
+    error_name: Optional[str] = None
+    resp: Optional[httpx.Response] = None
 
     # We first use HEAD to optimize requests
     try:
@@ -271,9 +289,9 @@ async def do_request_async(
 
 def is_tlds_matching(url1: str, url2: str, strict_suffix: bool = True) -> bool:
     is_matching: bool = False
-    tld_orig = tldextract.extract(url1)
+    tld_orig: Any = tldextract.extract(url1)
     # In some cases they add the HTTPS port
-    tld_redi = tldextract.extract(url2)
+    tld_redi: Any = tldextract.extract(url2)
 
     # If it's the same example.com
     if tld_orig.domain == tld_redi.domain and tld_orig.suffix == tld_redi.suffix:
@@ -290,12 +308,13 @@ def is_tlds_matching(url1: str, url2: str, strict_suffix: bool = True) -> bool:
     return is_matching
 
 
-def _get_new_url(response):
+def _get_new_url(response: httpx.Response) -> str:
     url_origin: str = str(response.url)
     redirect_url: str = response.headers.get("location", "unknown")
 
     # If it is a local redirection
-    tld_redirect = tldextract.extract(redirect_url)
+    new_url: str = ""
+    tld_redirect: Any = tldextract.extract(redirect_url)
     if tld_redirect.domain == "":
         parsed_url = urlparse(url_origin)
         url_replaced = parsed_url._replace(path=redirect_url)
@@ -306,65 +325,73 @@ def _get_new_url(response):
     return new_url
 
 
-def handle_redirect(client, resp, sleep_between_requests: bool = True):
-    error_name = None
-    data = {
+def handle_redirect(
+    client: Client, resp: httpx.Response, sleep_between_requests: bool = True
+) -> Tuple[Dict[str, Any], Optional[httpx.Response], Optional[str]]:
+    error_name: Optional[str] = None
+    new_resp: Optional[httpx.Response] = None
+    chain: List[str] = []
+    data: Dict[str, Any] = {
         "chain": [],
         "final_url": None,
         "tld_match": False,
     }
 
-    new_url = _get_new_url(resp)
+    new_url: str = _get_new_url(resp)
 
-    resp, error_name, chain = follow_redirect(
+    new_resp, error_name, chain = follow_redirect(
         client, new_url, sleep_between_requests=sleep_between_requests
     )
 
     data["chain"] = chain
-    if resp is not None:
-        data["final_url"] = str(resp.url)
+    if new_resp is not None:
+        data["final_url"] = str(new_resp.url)
         data["tld_match"] = is_tlds_matching(
-            str(resp.url), data["final_url"], strict_suffix=False
+            str(new_resp.url), data["final_url"], strict_suffix=False
         )
 
-    return data, resp, error_name
+    return data, new_resp, error_name
 
 
-async def handle_redirect_async(client, resp, sleep_between_requests: bool = True):
-    error_name = None
-    data = {
+async def handle_redirect_async(
+    client: AsyncClient, resp: httpx.Response, sleep_between_requests: bool = True
+) -> Tuple[Dict[str, Any], Optional[httpx.Response], Optional[str]]:
+    error_name: Optional[str] = None
+    new_resp: Optional[httpx.Response] = None
+    chain: List[str] = []
+    data: Dict[str, Any] = {
         "chain": [],
         "final_url": None,
         "tld_match": False,
     }
 
-    new_url = _get_new_url(resp)
+    new_url: str = _get_new_url(resp)
 
-    resp, error_name, chain = await follow_redirect_async(
+    new_resp, error_name, chain = await follow_redirect_async(
         client, new_url, sleep_between_requests=sleep_between_requests
     )
 
     data["chain"] = chain
-    if resp is not None:
-        data["final_url"] = str(resp.url)
+    if new_resp is not None:
+        data["final_url"] = str(new_resp.url)
         data["tld_match"] = is_tlds_matching(
-            str(resp.url), data["final_url"], strict_suffix=False
+            str(new_resp.url), data["final_url"], strict_suffix=False
         )
 
-    return data, resp, error_name
+    return data, new_resp, error_name
 
 
 def follow_redirect(
-    client,
+    client: Client,
     url: str,
     depth: int = 5,
     sleep_between_requests: bool = True,
     head_optim: bool = True,
-):
+) -> Tuple[Optional[httpx.Response], Optional[str], List[str]]:
     if depth <= 0:
         return None, "Max depth reached", []
 
-    chain = [url]
+    chain: List[str] = [url]
     resp, error_name = do_request(
         client,
         url,
@@ -374,7 +401,7 @@ def follow_redirect(
 
     # Has redirect
     if resp is not None and 400 > resp.status_code >= 300:
-        new_url = _get_new_url(resp)
+        new_url: str = _get_new_url(resp)
         nresp, error_name, tchain = follow_redirect(
             client,
             new_url,
@@ -389,16 +416,16 @@ def follow_redirect(
 
 
 async def follow_redirect_async(
-    client,
+    client: AsyncClient,
     url: str,
     depth: int = 5,
     sleep_between_requests: bool = True,
     head_optim: bool = True,
-):
+) -> Tuple[Optional[httpx.Response], Optional[str], List[str]]:
     if depth <= 0:
         return None, "Max depth reached", []
 
-    chain = [url]
+    chain: List[str] = [url]
     resp, error_name = await do_request_async(
         client,
         url,
@@ -408,7 +435,7 @@ async def follow_redirect_async(
 
     # Has redirect
     if resp is not None and 400 > resp.status_code >= 300:
-        new_url = _get_new_url(resp)
+        new_url: str = _get_new_url(resp)
         nresp, error_name, tchain = await follow_redirect_async(
             client,
             new_url,
