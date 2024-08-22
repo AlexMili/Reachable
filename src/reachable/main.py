@@ -31,6 +31,9 @@ def is_reachable(
     else:
         close_client = False
 
+    # Only keep unique URLs to avoid requesting same URL multiple times
+    url = list(set(url))
+
     results = []
     iterator = url
     if return_as_list is True:
@@ -107,6 +110,9 @@ async def is_reachable_async(
         await client.open()
     else:
         close_client = False
+
+    # Only keep unique URLs to avoid requesting same URL multiple times
+    url = list(set(url))
 
     results = []
     iterator = url
