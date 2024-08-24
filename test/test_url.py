@@ -1,5 +1,7 @@
 import asyncio
+
 from tqdm.asyncio import tqdm
+
 from reachable import is_reachable, is_reachable_async
 from reachable.client import AsyncClient
 
@@ -7,7 +9,8 @@ from reachable.client import AsyncClient
 def test_serp():
     result = is_reachable("https://google.com")
     result2 = is_reachable(["https://google.com", "https://bing.com"])
-    print("Done")
+    assert isinstance(result, dict)
+    assert len(result2) == 2
 
 
 def test_async():
@@ -20,7 +23,9 @@ def test_async():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
     try:
-        result = loop.run_until_complete(asyncio.gather(*[is_reachable_async(url) for url in urls]))
+        result = loop.run_until_complete(
+            asyncio.gather(*[is_reachable_async(url) for url in urls])
+        )
     finally:
         loop.close()
 
