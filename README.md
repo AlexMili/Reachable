@@ -35,7 +35,8 @@ result = is_reachable("https://google.com")
 The output will look like this:
 ```json
 {
-    "url": "https://www.google.com/",
+    "original_url": "https://google.com",
+    "final_url": "https://www.google.com/",
     "response": null, 
     "status_code": 200,
     "success": true,
@@ -59,7 +60,8 @@ The output will look like this:
 ```json
 [
     {
-        "url": "https://www.google.com/",
+        "original_url": "https://google.com",
+        "final_url": "https://www.google.com/",
         "response": null, 
         "status_code": 200,
         "success": true,
@@ -72,15 +74,18 @@ The output will look like this:
         }
     },
     {
-        "url": "https://www.bing.com/?toWww=1&redig=16A78C94",
+        "original_url": "http://bing.com",
+        "final_url": "https://www.bing.com/?toWww=1&redig=16A78C94",
         "response": null,
         "status_code": 200,
         "success": true,
         "error_name": null,
         "cloudflare_protection": false,
-        "redirect": {"chain": ["https://www.bing.com:443/?toWww=1&redig=16A78C94"],
-        "final_url": "https://www.bing.com/?toWww=1&redig=16A78C94",
-        "tld_match": true
+        "redirect": {
+            "chain": ["https://www.bing.com:443/?toWww=1&redig=16A78C94"],
+            "final_url": "https://www.bing.com/?toWww=1&redig=16A78C94",
+            "tld_match": true
+        }
     }
 ]
 ```
