@@ -43,7 +43,7 @@ def is_reachable(
     results: List[Dict[str, Any]] = []
     iterator: Union[List[str], tqdm] = url_list
     if return_as_list is True:
-        iterator = tqdm(url)
+        iterator = tqdm(url_list)
 
     for elt in iterator:
         resp: Optional[httpx.Response] = None
