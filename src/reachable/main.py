@@ -81,6 +81,8 @@ def is_reachable(
 
             if b"cloudflareinsights.com" in resp.content:
                 to_return["cloudflare_protection"] = True
+            elif "cf-ray" in resp.headers:
+                to_return["cloudflare_protection"] = True
 
         if include_response is True:
             to_return["response"] = resp
@@ -168,6 +170,8 @@ async def is_reachable_async(
             to_return["status_code"] = resp.status_code
 
             if b"cloudflareinsights.com" in resp.content:
+                to_return["cloudflare_protection"] = True
+            elif "cf-ray" in resp.headers:
                 to_return["cloudflare_protection"] = True
 
         if include_response is True:
