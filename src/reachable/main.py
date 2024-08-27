@@ -199,7 +199,7 @@ def do_request(
             time.sleep(random.SystemRandom().uniform(1, 2))
         resp = client.head(url)
     except httpx.ConnectError:
-        error_name = "ConnexionError"
+        error_name = "ConnectionError"
     except httpx.ConnectTimeout:
         error_name = "ConnectTimeout"
     except httpx.ReadTimeout:
@@ -220,7 +220,7 @@ def do_request(
                 time.sleep(random.SystemRandom().uniform(1, 2))
             resp = client.get(url)
         except httpx.ConnectError:
-            error_name = "ConnexionError"
+            error_name = "ConnectionError"
         except httpx.ConnectTimeout:
             error_name = "ConnectTimeout"
         except httpx.ReadTimeout:
@@ -248,7 +248,7 @@ async def do_request_async(
             await asyncio.sleep(random.SystemRandom().uniform(1, 2))
         resp = await client.head(url)
     except httpx.ConnectError:
-        error_name = "ConnexionError"
+        error_name = "ConnectionError"
     except httpx.ConnectTimeout:
         error_name = "ConnectTimeout"
     except httpx.ReadTimeout:
@@ -269,7 +269,7 @@ async def do_request_async(
                 await asyncio.sleep(random.SystemRandom().uniform(1, 2))
             resp = await client.get(url)
         except httpx.ConnectError:
-            error_name = "ConnexionError"
+            error_name = "ConnectionError"
         except httpx.ConnectTimeout:
             error_name = "ConnectTimeout"
         except httpx.ReadTimeout:
