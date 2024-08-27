@@ -53,6 +53,7 @@ def is_reachable(
             "success": False,
             "error_name": None,
             "cloudflare_protection": False,
+            "has_js_redirect": False,
         }
 
         resp, to_return["error_name"] = do_request(
@@ -83,6 +84,12 @@ def is_reachable(
                 to_return["cloudflare_protection"] = True
             elif "cf-ray" in resp.headers:
                 to_return["cloudflare_protection"] = True
+
+            # Since really detecting JS redirects is not doable, we only detect
+            # some cases and flag it has JS redirect. Of course it needs more tests
+            # with some frameworks like selenium.
+            if b"DOMContentLoaded" in resp.content and "location.href" in resp.content:
+                to_return["has_js_redirect"] = True
 
         if include_response is True:
             to_return["response"] = resp
@@ -141,6 +148,7 @@ async def is_reachable_async(
             "success": False,
             "error_name": None,
             "cloudflare_protection": False,
+            "has_js_redirect": False,
         }
 
         resp, to_return["error_name"] = await do_request_async(
@@ -173,6 +181,12 @@ async def is_reachable_async(
                 to_return["cloudflare_protection"] = True
             elif "cf-ray" in resp.headers:
                 to_return["cloudflare_protection"] = True
+
+            # Since really detecting JS redirects is not doable, we only detect
+            # some cases and flag it has JS redirect. Of course it needs more tests
+            # with some frameworks like selenium.
+            if b"DOMContentLoaded" in resp.content and "location.href" in resp.content:
+                to_return["has_js_redirect"] = True
 
         if include_response is True:
             to_return["response"] = resp
