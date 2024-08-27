@@ -41,7 +41,7 @@ def is_reachable(
     url_list = list(set(url_list))
 
     results: List[Dict[str, Any]] = []
-    iterator: Union[List[str], tqdm] = url
+    iterator: Union[List[str], tqdm] = url_list
     if return_as_list is True:
         iterator = tqdm(url)
 
@@ -127,7 +127,7 @@ async def is_reachable_async(
     url_list = list(set(url_list))
 
     results: List[Dict[str, Any]] = []
-    iterator: Union[List[str], tqdm] = url
+    iterator: Union[List[str], tqdm] = url_list
     if return_as_list is True:
         iterator = tqdm(url_list)
 
