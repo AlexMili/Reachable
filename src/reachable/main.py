@@ -88,7 +88,7 @@ def is_reachable(
             # Since really detecting JS redirects is not doable, we only detect
             # some cases and flag it has JS redirect. Of course it needs more tests
             # with some frameworks like selenium.
-            if b"DOMContentLoaded" in resp.content and "location.href" in resp.content:
+            if b"DOMContentLoaded" in resp.content and b"location.href" in resp.content:
                 to_return["has_js_redirect"] = True
 
         if include_response is True:
@@ -185,7 +185,7 @@ async def is_reachable_async(
             # Since really detecting JS redirects is not doable, we only detect
             # some cases and flag it has JS redirect. Of course it needs more tests
             # with some frameworks like selenium.
-            if b"DOMContentLoaded" in resp.content and "location.href" in resp.content:
+            if b"DOMContentLoaded" in resp.content and b"location.href" in resp.content:
                 to_return["has_js_redirect"] = True
 
         if include_response is True:
