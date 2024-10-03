@@ -176,7 +176,7 @@ async def is_reachable_async(
                 to_return["redirect"],
                 resp,
                 to_return["error_name"],
-            ) = await handle_redirect_async(client, resp)
+            ) = await handle_redirect_async(client, resp, head_optim=head_optim)
 
             if to_return["redirect"]["final_url"] is not None:
                 to_return["final_url"] = to_return["redirect"]["final_url"]
@@ -226,7 +226,11 @@ def do_request(
     try:
         if sleep_between_requests is True:
             time.sleep(random.SystemRandom().uniform(1, 2))
-        resp = client.head(url)
+
+        if head_optim is True:
+            resp = client.head(url)
+        else:
+            resp = client.get(url)
     except httpx.ConnectError:
         error_name = "ConnectionError"
     except httpx.ConnectTimeout:
@@ -278,7 +282,11 @@ async def do_request_async(
     try:
         if sleep_between_requests is True:
             await asyncio.sleep(random.SystemRandom().uniform(1, 2))
-        resp = await client.head(url)
+
+        if head_optim is True:
+            resp = await client.head(url, ssl_fallback_to_http=ssl_fallback_to_http)
+        else:
+            resp = await client.get(url, ssl_fallback_to_http=ssl_fallback_to_http)
     except httpx.ConnectError:
         error_name = "ConnectionError"
     except httpx.ConnectTimeout:
@@ -358,7 +366,10 @@ def _get_new_url(response: httpx.Response) -> str:
 
 
 def handle_redirect(
-    client: Client, resp: httpx.Response, sleep_between_requests: bool = True
+    client: Client,
+    resp: httpx.Response,
+    sleep_between_requests: bool = True,
+    head_optim: bool = True,
 ) -> Tuple[Dict[str, Any], Optional[httpx.Response], Optional[str]]:
     error_name: Optional[str] = None
     new_resp: Optional[httpx.Response] = None
@@ -372,7 +383,10 @@ def handle_redirect(
     new_url: str = _get_new_url(resp)
 
     new_resp, error_name, chain = follow_redirect(
-        client, new_url, sleep_between_requests=sleep_between_requests
+        client,
+        new_url,
+        sleep_between_requests=sleep_between_requests,
+        head_optim=head_optim,
     )
 
     data["chain"] = chain
@@ -386,7 +400,10 @@ def handle_redirect(
 
 
 async def handle_redirect_async(
-    client: AsyncClient, resp: httpx.Response, sleep_between_requests: bool = True
+    client: AsyncClient,
+    resp: httpx.Response,
+    sleep_between_requests: bool = True,
+    head_optim: bool = True,
 ) -> Tuple[Dict[str, Any], Optional[httpx.Response], Optional[str]]:
     error_name: Optional[str] = None
     new_resp: Optional[httpx.Response] = None
@@ -400,7 +417,10 @@ async def handle_redirect_async(
     new_url: str = _get_new_url(resp)
 
     new_resp, error_name, chain = await follow_redirect_async(
-        client, new_url, sleep_between_requests=sleep_between_requests
+        client,
+        new_url,
+        sleep_between_requests=sleep_between_requests,
+        head_optim=head_optim,
     )
 
     data["chain"] = chain
