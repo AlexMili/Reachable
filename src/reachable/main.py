@@ -1,5 +1,6 @@
 import asyncio
 import random
+import ssl
 import time
 from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse, urlunparse
@@ -19,6 +20,7 @@ def is_reachable(
     head_optim: bool = True,
     include_response: bool = False,
     client: Optional[Client] = None,
+    ssl_fallback_to_http: bool = False,
 ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
     return_as_list: bool = True
     url_list: List[str] = []
@@ -33,7 +35,11 @@ def is_reachable(
 
     close_client: bool = True
     if client is None:
-        client = Client(headers=headers, include_host=include_host)
+        client = Client(
+            headers=headers,
+            include_host=include_host,
+            ssl_fallback_to_http=ssl_fallback_to_http,
+        )
     else:
         close_client = False
 
@@ -113,6 +119,7 @@ async def is_reachable_async(
     head_optim: bool = True,
     include_response: bool = False,
     client: Optional[AsyncClient] = None,
+    ssl_fallback_to_http: bool = False,
 ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
     return_as_list: bool = True
     url_list: List[str] = []
@@ -127,7 +134,11 @@ async def is_reachable_async(
 
     close_client: bool = True
     if client is None:
-        client = AsyncClient(headers=headers, include_host=include_host)
+        client = AsyncClient(
+            headers=headers,
+            include_host=include_host,
+            ssl_fallback_to_http=ssl_fallback_to_http,
+        )
         await client.open()
     else:
         close_client = False
@@ -224,6 +235,8 @@ def do_request(
         error_name = "ReadTimeout"
     except httpx.RemoteProtocolError:
         error_name = "RemoteProtocolError"
+    except ssl.SSLError:
+        error_name = "SSLError"
     except Exception as e:
         error_name = type(e).__name__
 
@@ -256,6 +269,7 @@ async def do_request_async(
     url: str,
     head_optim: bool = True,
     sleep_between_requests: bool = True,
+    ssl_fallback_to_http: bool = False,
 ) -> Tuple[Optional[httpx.Response], Optional[str]]:
     error_name: Optional[str] = None
     resp: Optional[httpx.Response] = None
@@ -285,7 +299,7 @@ async def do_request_async(
         try:
             if sleep_between_requests is True:
                 await asyncio.sleep(random.SystemRandom().uniform(1, 2))
-            resp = await client.get(url)
+            resp = await client.get(url, ssl_fallback_to_http=ssl_fallback_to_http)
         except httpx.ConnectError:
             error_name = "ConnectionError"
         except httpx.ConnectTimeout:
