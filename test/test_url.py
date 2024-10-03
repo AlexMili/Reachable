@@ -13,6 +13,21 @@ def test_serp():
     assert len(result2) == 2
 
 
+def test_same_urls():
+    result = is_reachable(["https://google.com", "https://google.com"])
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert result[0]["status_code"] == 200
+
+
+def test_same_urls_async():
+    urls = ["https://google.com", "https://google.com"]
+    result = asyncio.run(is_reachable_async(urls))
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert result[0]["status_code"] == 200
+
+
 def test_async():
     urls = ["https://google.com", "https://bing.com"]
 
