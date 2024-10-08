@@ -359,7 +359,7 @@ class AsyncPlaywrightClient:
         page = await self.browser.new_page()
 
         # Register the route to block specific resources
-        await page.route("**/*", AsyncPlaywright.block_resources)
+        await page.route("**/*", AsyncPlaywrightClient.block_resources)
 
         # Handler to track outgoing requests and handle redirects
         async def request_handler(request):
@@ -406,25 +406,23 @@ class AsyncPlaywrightClient:
 
         return resp
 
-    def get(
+    async def get(
         self, url: str, ssl_fallback_to_http: bool = False
     ) -> Optional[httpx.Response]:
-        return self.request("get", url, ssl_fallback_to_http=ssl_fallback_to_http)
+        return await self.request("get", url, ssl_fallback_to_http=ssl_fallback_to_http)
 
-    def post(
-        self, url: str, ssl_fallback_to_http: bool = False
-    ) -> Optional[httpx.Response]:
-        logging.warning(
-            "Using Playwright client, all requests are GET requests through the browser"
-        )
-        return self.request("get", url, ssl_fallback_to_http=ssl_fallback_to_http)
-
-    def head(
+    async def post(
         self, url: str, ssl_fallback_to_http: bool = False
     ) -> Optional[httpx.Response]:
         logging.warning(
             "Using Playwright client, all requests are GET requests through the browser"
         )
-        return self.request("get", url, ssl_fallback_to_http=ssl_fallback_to_http)
+        return await self.request("get", url, ssl_fallback_to_http=ssl_fallback_to_http)
 
-        return await self.request("head", url, headers, include_host)
+    async def head(
+        self, url: str, ssl_fallback_to_http: bool = False
+    ) -> Optional[httpx.Response]:
+        logging.warning(
+            "Using Playwright client, all requests are GET requests through the browser"
+        )
+        return await self.request("get", url, ssl_fallback_to_http=ssl_fallback_to_http)
