@@ -227,7 +227,9 @@ def do_request(
         if sleep_between_requests is True:
             time.sleep(random.SystemRandom().uniform(1, 2))
 
-        if head_optim is True:
+        # "Classic" client is httpx, AioHttp, etc.
+        # Otherwise it is a "browser" like Playwright, etc
+        if head_optim is True and client._type == "classic":
             resp = client.head(url)
         else:
             resp = client.get(url)
@@ -245,7 +247,13 @@ def do_request(
         error_name = type(e).__name__
 
     # Sometimes, the 40X and 50X errors are generated because of the use of HEAD request
-    if head_optim is True and resp is not None and resp.status_code >= 400:
+    # If client's type is a browser, the error is definitive.
+    if (
+        head_optim is True
+        and resp is not None
+        and resp.status_code >= 400
+        and client._type == "classic"
+    ):
         # Reset error & response
         error_name = None
         resp = None
@@ -283,7 +291,9 @@ async def do_request_async(
         if sleep_between_requests is True:
             await asyncio.sleep(random.SystemRandom().uniform(1, 2))
 
-        if head_optim is True:
+        # "Classic" client is httpx, AioHttp, etc.
+        # Otherwise it is a "browser" like Playwright, etc
+        if head_optim is True and client._type == "classic":
             resp = await client.head(url, ssl_fallback_to_http=ssl_fallback_to_http)
         else:
             resp = await client.get(url, ssl_fallback_to_http=ssl_fallback_to_http)
@@ -299,7 +309,13 @@ async def do_request_async(
         error_name = type(e).__name__
 
     # Sometimes, the 40X and 50X errors are generated because of the use of HEAD request
-    if head_optim is True and resp is not None and resp.status_code >= 400:
+    # If client's type is a browser, the error is definitive.
+    if (
+        head_optim is True
+        and resp is not None
+        and resp.status_code >= 400
+        and client._type == "classic"
+    ):
         # Reset error & response
         error_name = None
         resp = None

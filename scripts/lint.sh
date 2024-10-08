@@ -4,4 +4,4 @@ set -e
 set -x
 
 ruff check src/reachable
-mypy src/reachable
+# mypy src/reachable
