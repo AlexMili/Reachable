@@ -361,19 +361,11 @@ class AsyncPlaywrightClient:
         # Register the route to block specific resources
         await page.route("**/*", AsyncPlaywrightClient.block_resources)
 
-        # Handler to track outgoing requests and handle redirects
-        async def request_handler(request):
-            # If the request is a navigation request and is redirected
-            if request.is_navigation_request() is True:
-                if request.redirected_from:
-                    # Update the final URL as the request redirects
-                    resp_obj["final_url"] = request.url
-
-        # Attach the request handler to the page
-        page.on("request", request_handler)
-
         async def response_handler(response):
-            if response.url == resp_obj["final_url"]:
+            # If URL is "about:blank" it means this is the initial load,
+            # so the first request must be the URL we are looking for
+            # to handle correctly redirects.
+            if page.url == "about:blank":
                 resp_obj["response"] = response
 
         page.on("response", response_handler)
