@@ -1,7 +1,6 @@
 import asyncio
-from collections.abc import Awaitable
 from types import TracebackType
-from typing import Any, List, Optional, Type
+from typing import Any, Awaitable, List, Optional, Type
 
 from tqdm.asyncio import tqdm
 

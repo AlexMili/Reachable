@@ -411,7 +411,7 @@ class AsyncPlaywrightClient:
     async def get(
         self, url: str, ssl_fallback_to_http: bool = False
     ) -> Optional[httpx.Response]:
-        return await self.request("get", url, ssl_fallback_to_http=ssl_fallback_to_http)
+        return await self.request(url, ssl_fallback_to_http=ssl_fallback_to_http)
 
     async def post(
         self, url: str, ssl_fallback_to_http: bool = False
@@ -419,7 +419,7 @@ class AsyncPlaywrightClient:
         logging.warning(
             "Using Playwright client, all requests are GET requests through the browser"
         )
-        return await self.request("get", url, ssl_fallback_to_http=ssl_fallback_to_http)
+        return await self.request(url, ssl_fallback_to_http=ssl_fallback_to_http)
 
     async def head(
         self, url: str, ssl_fallback_to_http: bool = False
@@ -427,4 +427,4 @@ class AsyncPlaywrightClient:
         logging.warning(
             "Using Playwright client, all requests are GET requests through the browser"
         )
-        return await self.request("get", url, ssl_fallback_to_http=ssl_fallback_to_http)
+        return await self.request(url, ssl_fallback_to_http=ssl_fallback_to_http)
