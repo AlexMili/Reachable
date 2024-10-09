@@ -386,6 +386,8 @@ class AsyncPlaywrightClient:
             content = await page.content()
         except TimeoutError:
             pass
+        finally:
+            await page.close()
 
         # Building the response
         resp: Optional[httpx.Response] = None
