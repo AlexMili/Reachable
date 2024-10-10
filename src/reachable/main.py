@@ -175,6 +175,8 @@ async def is_reachable_async(
         # with information that we have.
         if (
             client._type == "browser"
+            and resp is not None
+            and len(str(getattr(resp, "url", ""))) > 0
             and str(resp.url) != elt
             and 300 > resp.status_code >= 200
         ):
