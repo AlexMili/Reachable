@@ -15,7 +15,15 @@ classifiers = [
     "Intended Audience :: Developers",
 ]
 keywords = []
-dependencies = ["httpx[http2]", "tldextract", "fake-useragent", "tqdm", "playwright"]
+dependencies = [
+    "httpx[http2]",
+    "tldextract",
+    "fake-useragent",
+    "tqdm",
+    "playwright",
+    "brotli",
+    "zstandard",
+]
 
 [project.urls]
 Homepage = "https://github.com/AlexMili/Reachable"
