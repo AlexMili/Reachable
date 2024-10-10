@@ -390,7 +390,7 @@ class AsyncPlaywrightClient:
             # has been decompressed, we mark it as "identity" which
             # mean no compression
             headers["content-encoding"] = "identity"
-            req = httpx.Request(method="get", url=url)
+            req = httpx.Request(method="get", url=resp_obj["response"].url)
             resp = httpx.Response(
                 request=req,
                 status_code=resp_obj["response"].status,

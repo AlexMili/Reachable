@@ -9,7 +9,7 @@ import httpx
 import tldextract
 from tqdm import tqdm
 
-from reachable.client import AsyncClient, Client
+from reachable.client import AsyncClient, AsyncPlaywrightClient, Client
 
 
 def is_reachable(
@@ -169,6 +169,22 @@ async def is_reachable_async(
             sleep_between_requests=sleep_between_requests,
         )
 
+        # If the request has been made by a browser client and the final URL doesn't
+        # match the initial one, it has been redirected.
+        # Redirects are handled transparently, so we need to populate `to_return`
+        # with information that we have.
+        if (
+            client._type == "browser"
+            and str(resp.url) != elt
+            and 300 > resp.status_code >= 200
+        ):
+            to_return["redirect"] = {
+                "chain": [str(resp.url)],
+                "final_url": str(resp.url),
+                "tld_match": is_tlds_matching(elt, str(resp.url), strict_suffix=False),
+            }
+            to_return["final_url"] = str(resp.url)
+
         # Then we handle redirects
         if resp is not None and 400 > resp.status_code >= 300:
             to_return["error_name"] = None
@@ -277,7 +293,7 @@ def do_request(
 
 
 async def do_request_async(
-    client: AsyncClient,
+    client: Union[AsyncClient, AsyncPlaywrightClient],
     url: str,
     head_optim: bool = True,
     sleep_between_requests: bool = True,
