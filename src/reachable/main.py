@@ -162,11 +162,19 @@ async def is_reachable_async(
             "has_js_redirect": False,
         }
 
-        resp, to_return["error_name"] = await do_request_async(
-            client,
-            elt,
-            head_optim=head_optim,
-            sleep_between_requests=sleep_between_requests,
+        # I don't know why but sometimes a TypeError is raised with the message
+        # "an integer is required". This only happens when a httpx.ConnectError
+        # has just been raised, tried different fixes without any success.
+        # The problem appears to appear in the async process so the error
+        # is not catchable here but where the async job has been called.
+        # Looks like using `asyncio.create_task` fix the problem (thks ChatGPT).
+        resp, to_return["error_name"] = await asyncio.create_task(
+            do_request_async(
+                client,
+                elt,
+                head_optim=head_optim,
+                sleep_between_requests=sleep_between_requests,
+            )
         )
 
         # If the request has been made by a browser client and the final URL doesn't
