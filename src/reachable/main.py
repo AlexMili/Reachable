@@ -261,6 +261,9 @@ def do_request(
         error_name = "RemoteProtocolError"
     except ssl.SSLError:
         error_name = "SSLError"
+    except httpx.ReadError:
+        # Usually this is when the server block us
+        error_name = "ReadError"
     except Exception as e:
         error_name = type(e).__name__
 
@@ -288,6 +291,11 @@ def do_request(
             error_name = "ReadTimeout"
         except httpx.RemoteProtocolError:
             error_name = "RemoteProtocolError"
+        except ssl.SSLError:
+            error_name = "SSLError"
+        except httpx.ReadError:
+            # Usually this is when the server block us
+            error_name = "ReadError"
         except Exception as e:
             error_name = type(e).__name__
 
@@ -321,8 +329,15 @@ async def do_request_async(
         error_name = "ConnectTimeout"
     except httpx.ReadTimeout:
         error_name = "ReadTimeout"
+    except httpx.WriteTimeout:
+        error_name = "ReadTimeout"
     except httpx.RemoteProtocolError:
         error_name = "RemoteProtocolError"
+    except ssl.SSLError:
+        error_name = "SSLError"
+    except httpx.ReadError:
+        # Usually this is when the server block us
+        error_name = "ReadError"
     except Exception as e:
         error_name = type(e).__name__
 
@@ -346,6 +361,8 @@ async def do_request_async(
             error_name = "ConnectionError"
         except httpx.ConnectTimeout:
             error_name = "ConnectTimeout"
+        except httpx.WriteTimeout:
+            error_name = "ReadTimeout"
         except httpx.ReadTimeout:
             error_name = "ReadTimeout"
         except httpx.RemoteProtocolError:
@@ -355,6 +372,11 @@ async def do_request_async(
             # which is documented in HTTPX's documentation but this is not what happens
             # when using sync mode so we standardize behavior here.
             resp = e.response
+        except ssl.SSLError:
+            error_name = "SSLError"
+        except httpx.ReadError:
+            # Usually this is when the server block us
+            error_name = "ReadError"
         except Exception as e:
             error_name = type(e).__name__
 
