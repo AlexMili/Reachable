@@ -22,12 +22,19 @@ class TaskPool(object):
         self._tasks.append(task)
 
     def _on_task_done(self, task: Any) -> None:
-        res: Any = task.result()
-        self._results.append(res)
-        self._semaphore.release()
+        try:
+            res = task.result()
+            self._results.append(res)
+        except Exception as e:
+            print(f"Task raised an exception: {e}")
+        finally:
+            self._semaphore.release()
 
     async def join(self) -> None:
-        await tqdm.gather(*self._tasks)
+        if self.use_tqdm:
+            await tqdm.gather(*self._tasks)
+        else:
+            await asyncio.gather(*self._tasks)
 
     async def __aenter__(self) -> Any:
         return self
