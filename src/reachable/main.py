@@ -273,7 +273,10 @@ def do_request(
         # Usually this is when the server block us
         error_name = "ReadError"
     except Exception as e:
-        error_name = type(e).__name__
+        if getattr(e, "name", None) is not None:
+            error_name = e.name
+        else:
+            error_name = type(e).__name__
 
     # Sometimes, the 40X and 50X errors are generated because of the use of HEAD request
     # If client's type is a browser, the error is definitive.
@@ -305,7 +308,10 @@ def do_request(
             # Usually this is when the server block us
             error_name = "ReadError"
         except Exception as e:
-            error_name = type(e).__name__
+            if getattr(e, "name", None) is not None:
+                error_name = e.name
+            else:
+                error_name = type(e).__name__
 
     return resp, error_name
 
@@ -347,7 +353,10 @@ async def do_request_async(
         # Usually this is when the server block us
         error_name = "ReadError"
     except Exception as e:
-        error_name = type(e).__name__
+        if getattr(e, "name", None) is not None:
+            error_name = e.name
+        else:
+            error_name = type(e).__name__
 
     # Sometimes, the 40X and 50X errors are generated because of the use of HEAD request
     # If client's type is a browser, the error is definitive.
@@ -386,7 +395,10 @@ async def do_request_async(
             # Usually this is when the server block us
             error_name = "ReadError"
         except Exception as e:
-            error_name = type(e).__name__
+            if getattr(e, "name", None) is not None:
+                error_name = e.name
+            else:
+                error_name = type(e).__name__
 
     return resp, error_name
 
