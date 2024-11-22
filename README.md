@@ -115,3 +115,52 @@ try:
 finally:
     loop.close()
 ```
+
+### Handling high volumes with Taskpool
+
+If you want to process a large number of URLs (> 500) you will quickly hit the limits of your hardware and/or OS because you can only open a defined number of active connections.
+
+To bypass this problem you can use the `TaskPool` class. It uses Asyncio Semaphores to limit the number of asyncio threads running. It works by acquiring a lock when starting the worker and releasing it when done. It allows to always have a number of asyncio workers without overwhelming the OS.
+
+```python
+import asyncio
+
+from reachable import is_reachable_async
+from reachable.client import AsyncClient
+from reachable.pool import TaskPool
+
+
+urls = ["https://google.com", "https://bing.com"]
+
+
+async def worker(url, client):
+    result = await is_reachable_async(url, client=client)
+    return result
+
+
+async def workers_builder(urls, pool_size: int = 100):
+    async with AsyncClient() as client:
+        tasks = TaskPool(workers=pool_size)
+
+        for url in urls:
+            await tasks.put(worker(url, client=client))
+
+        await tasks.join()
+
+    return tasks._results
+
+
+try:
+    loop = asyncio.get_running_loop()
+except RuntimeError:
+    # No loop already exists so we crete one
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+try:
+    result = loop.run_until_complete(workers_builder(urls))
+    print(result)
+finally:
+    loop.close()
+
+```
