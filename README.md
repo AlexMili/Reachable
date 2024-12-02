@@ -12,6 +12,7 @@
     - Wait between consecutive requests to the same host
     - Include `Host` header
 - Use of HTTP/2
+- Detect parking domains
 
 # Installation
 You can install it with pip :
