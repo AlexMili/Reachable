@@ -11,7 +11,6 @@ import httpx
 import tldextract
 from tqdm import tqdm
 
-from reachable.aio_client import AioAsyncClient
 from reachable.client import AsyncClient, AsyncPlaywrightClient, Client
 
 
@@ -245,94 +244,6 @@ async def is_reachable_async(
                     head_optim=head_optim,
                     sleep=sleep_between_requests,
                 )
-
-        if include_response is True:
-            to_return["response"] = resp
-
-        results.append(to_return)
-
-    if close_client is True:
-        await client.close()
-
-    if return_as_list is False:
-        return results[0]
-    else:
-        return results
-
-
-async def is_reachable_aio_async(
-    url: Union[List[str], str],
-    headers: Optional[Dict[str, str]] = None,
-    include_host: bool = True,
-    sleep_between_requests: bool = True,
-    head_optim: bool = True,
-    include_response: bool = False,
-    client: Optional[AioAsyncClient] = None,
-) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
-    return_as_list: bool = True
-    url_list: List[str] = []
-
-    if isinstance(url, str):
-        url_list = [url]
-        return_as_list = False
-    elif isinstance(url, list):
-        url_list = url
-    else:
-        raise ValueError(f"URL(s) of type {type(url)} is not supported")
-
-    close_client: bool = True
-    if client is None:
-        client = AioAsyncClient(headers=headers, include_host=include_host)
-        await client.open()
-    else:
-        close_client = False
-
-    # Only keep unique URLs to avoid requesting same URL multiple times
-    url_list = list(set(url_list))
-
-    results: List[Dict[str, Any]] = []
-    iterator: Union[List[str], tqdm] = url
-    if return_as_list is True:
-        iterator = tqdm(url_list)
-
-    for elt in iterator:
-        resp = None
-        to_return: Dict[str, Any] = {
-            "original_url": elt,
-            "status_code": -1,
-            "success": False,
-            "error_name": None,
-            "cloudflare_protection": False,
-        }
-
-        resp, to_return["error_name"] = await do_request_async(
-            client,
-            elt,
-            head_optim=head_optim,
-            sleep_between_requests=sleep_between_requests,
-        )
-
-        # Then we handle redirects
-        if resp is not None and 400 > resp.status >= 300:
-            to_return["error_name"] = None
-            (
-                to_return["redirect"],
-                resp,
-                to_return["error_name"],
-            ) = await handle_redirect_async(client, resp)
-
-            if to_return["redirect"]["final_url"] is not None:
-                to_return["final_url"] = to_return["redirect"]["final_url"]
-
-        if resp is not None:
-            # Success
-            if 300 > resp.status >= 200:
-                to_return["success"] = True
-
-            to_return["status_code"] = resp.status
-
-            if b"cloudflareinsights.com" in resp.content:
-                to_return["cloudflare_protection"] = True
 
         if include_response is True:
             to_return["response"] = resp
