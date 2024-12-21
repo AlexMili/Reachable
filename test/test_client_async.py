@@ -144,26 +144,27 @@ async def test_stream(async_mock_client):
     """
     Test that the stream method yields a response, ensuring it's an async generator.
     """
-    # This is the mock of `httpx.AsyncClient` (from your fixture)
-    mock_instance = async_mock_client.return_value
-
-    mock_stream_response = MagicMock(spec=httpx.Response)
+    client = AsyncClient()
+    # We manually set `client.client` to a mock so we can control `.stream(...)`
+    client.client = MagicMock(spec=httpx.AsyncClient)
 
     @asynccontextmanager
-    async def mock_stream_context(*args, **kwargs):
-        yield mock_stream_response
+    async def mock_stream_cm(*args, **kwargs):
+        """A fake successful stream context manager yielding a mock Response."""
+        yield MagicMock(spec=httpx.Response)
 
-    # So now calling mock_instance.stream(...) returns our async context
-    mock_instance.stream.side_effect = mock_stream_context
+    # When `client.client.stream(...)` is called, return our fake ACM
+    client.client.stream.side_effect = mock_stream_cm
 
-    c = AsyncClient()
-    await c.open()
+    # Now call `.stream(...)`
+    stream_ctx = await client.stream("GET", "https://example.com")
+    # Make sure it's an async context manager
+    assert hasattr(stream_ctx, "__aenter__") and hasattr(stream_ctx, "__aexit__")
 
-    collected = []
-    # Because our `stream` is an async generator, we can do:
-    async for r in c.stream("get", "https://example.com"):
-        collected.append(r)
-
-    assert collected == [mock_stream_response]
-
-    await c.close()
+    # Check usage in an async with:
+    async with stream_ctx as response:
+        assert isinstance(response, httpx.Response)
+    # Verify we called `client.client.stream` with correct args
+    client.client.stream.assert_called_once_with(
+        "GET", "https://example.com", headers=None, content=None
+    )
