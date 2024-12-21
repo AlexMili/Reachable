@@ -2,7 +2,7 @@ import asyncio
 import logging
 import re
 import ssl
-from typing import Any, Dict, Optional
+from typing import Any, AsyncIterator, Dict, Iterator, Optional, Tuple
 from urllib.parse import urlparse, urlunparse
 
 import httpx
@@ -170,6 +170,45 @@ class Client(BaseClient):
             ssl_fallback_to_http=ssl_fallback_to_http,
         )
 
+    def stream(
+        self,
+        method: str,
+        url: str,
+        headers: Optional[Dict[str, str]] = None,
+        include_host: bool = False,
+        content: Any = None,
+        ssl_fallback_to_http: bool = False,
+    ) -> Iterator[httpx.Response]:
+        url, headers, ssl_fallback_to_http = self._prepare_request(
+            url, headers, include_host, ssl_fallback_to_http
+        )
+
+        try:
+            with self.client.stream(
+                method, url, headers=headers, content=content
+            ) as response:
+                # Yield the entire `response` object (only once)
+                yield response
+        except ssl.SSLError as e:
+            if ssl_fallback_to_http is True:
+                with self.client.request(
+                    method,
+                    url.lower().replace("https://", "http://"),
+                    headers=headers,
+                    content=content,
+                ) as response:
+                    yield response
+            else:
+                raise e
+        except ssl.SSLWantReadError:
+            # From https://github.com/encode/httpx/discussions/2941#discussioncomment-7574569
+            # SSLWantReadError does itself not cause any problems. All it indicates is
+            # that there isn't enough data in the local buffer for decrypting more
+            # incoming data, so more needs to be read from the socket. And that's where
+            # the timeout is coming from.
+            # So we just retry
+            pass
+
     def close(self) -> None:
         self.client.close()
 
@@ -292,6 +331,46 @@ class AsyncClient(BaseClient):
             include_host,
             ssl_fallback_to_http=ssl_fallback_to_http,
         )
+
+    async def stream(
+        self,
+        method: str,
+        url: str,
+        headers: Optional[Dict[str, str]] = None,
+        include_host: bool = False,
+        content: Any = None,
+        ssl_fallback_to_http: bool = False,
+    ) -> AsyncIterator[httpx.Response]:
+        url, headers, ssl_fallback_to_http = self._prepare_request(
+            url, headers, include_host, ssl_fallback_to_http
+        )
+
+        try:
+            async with self.client.stream(
+                method, url, headers=headers, content=content
+            ) as response:
+                # Yield the entire `response` object (only once)
+                yield response
+        except ssl.SSLError as e:
+            if ssl_fallback_to_http is True:
+                async with self.client.stream(
+                    method,
+                    url.lower().replace("https://", "http://"),
+                    headers=headers,
+                    content=content,
+                ) as response:
+                    # Yield the entire `response` object (only once)
+                    yield response
+            else:
+                raise e
+        except ssl.SSLWantReadError:
+            # From https://github.com/encode/httpx/discussions/2941#discussioncomment-7574569
+            # SSLWantReadError does itself not cause any problems. All it indicates is
+            # that there isn't enough data in the local buffer for decrypting more
+            # incoming data, so more needs to be read from the socket. And that's where
+            # the timeout is coming from.
+            # So we just retry
+            pass
 
 
 class AsyncPlaywrightClient:
