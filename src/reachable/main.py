@@ -101,12 +101,15 @@ def is_reachable(
                 to_return["has_js_redirect"] = True
 
             if check_parking_domain is True:
-                to_return["is_parking_domain"] = is_parking_domain(
-                    client,
-                    str(resp.url),
-                    head_optim=head_optim,
-                    sleep=sleep_between_requests,
-                )
+                if "parking_session" in resp.cookies:
+                    to_return["is_parking_domain"] = True
+                else:
+                    to_return["is_parking_domain"] = is_parking_domain(
+                        client,
+                        str(resp.url),
+                        head_optim=head_optim,
+                        sleep=sleep_between_requests,
+                    )
 
         if include_response is True:
             to_return["response"] = resp
@@ -238,12 +241,15 @@ async def is_reachable_async(
                 to_return["has_js_redirect"] = True
 
             if check_parking_domain is True:
-                to_return["is_parking_domain"] = await is_parking_domain_async(
-                    client,
-                    str(resp.url),
-                    head_optim=head_optim,
-                    sleep=sleep_between_requests,
-                )
+                if "parking_session" in resp.cookies:
+                    to_return["is_parking_domain"] = True
+                else:
+                    to_return["is_parking_domain"] = await is_parking_domain_async(
+                        client,
+                        str(resp.url),
+                        head_optim=head_optim,
+                        sleep=sleep_between_requests,
+                    )
 
         if include_response is True:
             to_return["response"] = resp
