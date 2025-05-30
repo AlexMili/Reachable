@@ -11,7 +11,6 @@ from fake_useragent import UserAgent
 from playwright.async_api import Error, TimeoutError, async_playwright
 from typing_extensions import Self
 
-
 ua: Any = UserAgent(browsers=["chrome"], os="windows", platforms="pc", min_version=120)
 
 
@@ -281,6 +280,18 @@ class AsyncClient(BaseClient):
             # the timeout is coming from.
             # So we just retry
             pass
+        except httpx.RequestError as exc:
+            if (
+                exc.__cause__
+                and isinstance(exc.__cause__, ssl.SSLError)
+                and ssl_fallback_to_http is True
+            ):
+                resp = await self.client.request(
+                    method,
+                    url.lower().replace("https://", "http://"),
+                    headers=headers,
+                    content=content,
+                )
 
         return resp
 
