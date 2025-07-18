@@ -11,6 +11,7 @@ from fake_useragent import UserAgent
 from playwright.async_api import Error, TimeoutError, async_playwright
 from typing_extensions import Self
 
+
 ua: Any = UserAgent(browsers=["chrome"], os="windows", platforms="pc", min_version=120)
 
 
@@ -76,17 +77,19 @@ class Client(BaseClient):
         include_host: bool = False,
         ssl_fallback_to_http: bool = False,
         ensure_protocol_url: bool = False,
+        proxy_url: Optional[str] = None,
     ) -> None:
         super().__init__(
             headers, include_host, ssl_fallback_to_http, ensure_protocol_url
         )
-        transport: httpx.HTTPTransport = httpx.HTTPTransport(retries=2)
+        transport: httpx.HTTPTransport = httpx.HTTPTransport(retries=2, proxy=proxy_url)
 
         self.client: httpx.Client = httpx.Client(
             transport=transport,
             timeout=self.timeout,
             headers=self.headers,
             http2=True,
+            verify=False,
         )
 
     def request(
@@ -216,11 +219,14 @@ class AsyncClient(BaseClient):
         include_host: bool = False,
         ssl_fallback_to_http: bool = False,
         ensure_protocol_url: bool = False,
+        proxy_url: Optional[str] = None,
     ) -> None:
         super().__init__(
             headers, include_host, ssl_fallback_to_http, ensure_protocol_url
         )
-        self.transport: httpx.AsyncHTTPTransport = httpx.AsyncHTTPTransport(retries=2)
+        self.transport: httpx.AsyncHTTPTransport = httpx.AsyncHTTPTransport(
+            retries=2, proxy=proxy_url
+        )
 
     async def open(self) -> None:
         self.client: httpx.AsyncClient = httpx.AsyncClient(
@@ -382,6 +388,7 @@ class AsyncPlaywrightClient:
         ssl_fallback_to_http: bool = False,
         ensure_protocol_url: bool = False,
         executable_path: Optional[str] = None,
+        proxy_url: Optional[str] = None,
     ):
         self.playwright = None
         self.playwright_manager = async_playwright()
@@ -392,12 +399,21 @@ class AsyncPlaywrightClient:
         self.ensure_protocol_url: bool = ensure_protocol_url
         self.headless: bool = headless
         self.executable_path: Optional[str] = executable_path
+        self.proxy = proxy_url
 
     async def open(self) -> None:
         self.playwright = await self.playwright_manager.__aenter__()
-        self.browser = await self.playwright.chromium.launch(
-            headless=self.headless, executable_path=self.executable_path
-        )
+
+        if self.proxy is not None:
+            self.browser = await self.playwright.chromium.launch(
+                headless=self.headless,
+                executable_path=self.executable_path,
+                proxy={"server": self.proxy},
+            )
+        else:
+            self.browser = await self.playwright.chromium.launch(
+                headless=self.headless, executable_path=self.executable_path
+            )
 
     async def close(self) -> None:
         await self.browser.close()
