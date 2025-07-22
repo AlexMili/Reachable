@@ -89,7 +89,6 @@ class Client(BaseClient):
             timeout=self.timeout,
             headers=self.headers,
             http2=True,
-            verify=False,
         )
 
     def request(
