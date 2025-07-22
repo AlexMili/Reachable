@@ -59,7 +59,10 @@ def test_async2():
 
     async def wrapper():
         async with AsyncClient(include_host=True) as client:
-            tasks = [is_reachable_async(url, client=client) for url in urls]
+            tasks = [
+                is_reachable_async(url, client=client, check_parking_domain=True)
+                for url in urls
+            ]
             return await tqdm.gather(*tasks)
 
     try:
