@@ -34,6 +34,12 @@ Documentation = "https://github.com/AlexMili/Reachable"
 
 playwright = ["playwright"]
 
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["./src/reachable/"]
 
