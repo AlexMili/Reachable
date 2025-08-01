@@ -11,6 +11,7 @@
     - Use randome Chrome user agent
     - Wait between consecutive requests to the same host
     - Include `Host` header
+    - Can use Playwright to make the request
 - Use of HTTP/2
 - Detect parking domains
 
@@ -18,6 +19,10 @@
 You can install it with pip :
 ```bash
 pip install reachable
+```
+If you want to use playwright:
+```bash
+pip install reachable[playwright]
 ```
 Or clone this repository and simply run :
 ```bash

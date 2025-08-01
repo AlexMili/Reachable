@@ -20,7 +20,6 @@ dependencies = [
     "tldextract",
     "fake-useragent",
     "tqdm",
-    "playwright",
     "brotli",
     "zstandard",
 ]
@@ -31,6 +30,9 @@ Issues = "https://github.com/AlexMili/Reachable/issues"
 Repository = "https://github.com/AlexMili/Reachable"
 Documentation = "https://github.com/AlexMili/Reachable"
 
+[project.optional-dependencies]
+
+playwright = ["playwright"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["./src/reachable/"]
