@@ -4,14 +4,17 @@ import os
 import random
 import ssl
 import time
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse, urlunparse
 
 import httpx
 import tldextract
 from tqdm import tqdm
 
-from reachable.client import AsyncClient, AsyncPlaywrightClient, Client
+from reachable.client import AsyncClient, Client
+
+if TYPE_CHECKING:
+    from reachable.playwright_client import AsyncPlaywrightClient
 
 
 def is_reachable(
@@ -343,7 +346,7 @@ def do_request(
 
 
 async def do_request_async(
-    client: Union[AsyncClient, AsyncPlaywrightClient],
+    client: Union[AsyncClient, "AsyncPlaywrightClient"],
     url: str,
     head_optim: bool = True,
     sleep_between_requests: bool = True,

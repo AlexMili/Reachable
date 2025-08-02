@@ -3,7 +3,7 @@ import asyncio
 from tqdm.asyncio import tqdm
 
 from reachable import is_reachable_async
-from reachable.client import AsyncPlaywrightClient
+from reachable.playwright_client import AsyncPlaywrightClient
 from reachable.pool import TaskPool
 
 
