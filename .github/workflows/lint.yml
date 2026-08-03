@@ -23,7 +23,7 @@ jobs:
         run: pip install --upgrade pip
 
       - name: Install Dependencies
-        run: pip install ruff mypy
+        run: pip install "ruff==0.16.1" mypy
 
       - name: Install
         run: pip install -e .

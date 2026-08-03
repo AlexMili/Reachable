@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 from reachable.client import AsyncClient, Client
 
+
 if TYPE_CHECKING:
     from reachable.playwright_client import AsyncPlaywrightClient
 

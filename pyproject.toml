@@ -47,6 +47,10 @@ packages = ["./src/reachable/"]
 path = "src/reachable/VERSION.md"
 pattern = "(?P<version>.*)"
 
+[tool.ruff.lint]
+# Pinned explicitly: ruff's implicit default rule set widened in 0.16
+select = ["E4", "E7", "E9", "F", "I"]
+
 [tool.ruff.lint.isort]
 lines-after-imports = 2
 known-first-party = ["reachable"]
